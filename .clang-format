@@ -1,0 +1,47 @@
+Language: Cpp
+IndentWidth: 4
+IndentCaseLabels: true
+AccessModifierOffset: -4
+ColumnLimit: 0
+PointerAlignment: Left
+QualifierAlignment: Left
+ReferenceAlignment: Left
+NamespaceIndentation: All
+CompactNamespaces: false
+FixNamespaceComments: true
+SortIncludes: false
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLambdasOnASingleLine: true
+AllowAllArgumentsOnNextLine: true
+AllowShortBlocksOnASingleLine: true
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: true
+  AfterUnion: true
+  AfterStruct: true
+  AfterClass: true
+  AfterNamespace: true
+  AfterFunction: true
+  AfterCaseLabel: true
+  AfterControlStatement: false
+  BeforeElse: false
+  BeforeCatch: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+LambdaBodyIndentation: OuterScope
