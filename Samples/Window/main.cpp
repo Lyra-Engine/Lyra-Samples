@@ -55,7 +55,7 @@ void setup_pipeline()
 
     auto compiler = execute([&]() {
         auto desc   = CompilerDescriptor{};
-        desc.target = CompileTarget::SPIRV;
+        desc.target = LYRA_RHI_COMPILER;
         desc.flags  = CompileFlag::DEBUG | CompileFlag::REFLECT;
         return Compiler::init(desc);
     });
@@ -298,7 +298,7 @@ int main()
 
     auto rhi = execute([&] {
         auto desc    = RHIDescriptor{};
-        desc.backend = RHIBackend::VULKAN;
+        desc.backend = LYRA_RHI_BACKEND;
         desc.flags   = RHIFlag::DEBUG | RHIFlag::VALIDATION;
         desc.window  = win->handle;
         return RHI::init(desc);
@@ -312,8 +312,6 @@ int main()
     auto device = execute([&]() {
         auto desc  = GPUDeviceDescriptor{};
         desc.label = "main_device";
-        desc.required_features.push_back(GPUFeatureName::SHADER_F16);
-        desc.required_features.push_back(GPUFeatureName::FLOAT32_BLENDABLE);
         return adapter.request_device(desc);
     });
 

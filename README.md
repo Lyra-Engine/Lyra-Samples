@@ -24,6 +24,7 @@ cmake --build Scratch           # build with CMake
 
 1. Window (an example how to get user inputs)
 2. Triangle (an example of the most basic graphics pipeline)
+3. DepthTest (an example of the graphics pipeline with depth testing enabled)
 
 ## Author(s)
 

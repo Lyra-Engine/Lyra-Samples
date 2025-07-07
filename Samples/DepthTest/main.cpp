@@ -27,6 +27,8 @@ GPURenderPipeline  pipeline;
 GPUBuffer          vbuffer;
 GPUBuffer          ibuffer;
 GPUBuffer          ubuffer;
+GPUTexture         dbuffer;
+GPUTextureView     dview;
 
 auto read_shader_source() -> const char*
 {
@@ -119,8 +121,9 @@ void setup_pipeline()
         desc.primitive.topology                    = GPUPrimitiveTopology::TRIANGLE_LIST;
         desc.primitive.front_face                  = GPUFrontFace::CCW;
         desc.primitive.strip_index_format          = GPUIndexFormat::UINT32;
-        desc.depth_stencil.depth_compare           = GPUCompareFunction::ALWAYS;
-        desc.depth_stencil.depth_write_enabled     = false;
+        desc.depth_stencil.format                  = GPUTextureFormat::DEPTH16UNORM;
+        desc.depth_stencil.depth_compare           = GPUCompareFunction::LESS;
+        desc.depth_stencil.depth_write_enabled     = true;
         desc.multisample.alpha_to_coverage_enabled = false;
         desc.multisample.count                     = 1;
         desc.vertex.module                         = vshader;
@@ -139,7 +142,7 @@ void setup_buffers()
     vbuffer = execute([&]() {
         auto desc               = GPUBufferDescriptor{};
         desc.label              = "vertex_buffer";
-        desc.size               = sizeof(Vertex) * 3;
+        desc.size               = sizeof(Vertex) * 6;
         desc.usage              = GPUBufferUsage::VERTEX | GPUBufferUsage::MAP_WRITE;
         desc.mapped_at_creation = true;
         return device.create_buffer(desc);
@@ -148,7 +151,7 @@ void setup_buffers()
     ibuffer = execute([&]() {
         auto desc               = GPUBufferDescriptor{};
         desc.label              = "index_buffer";
-        desc.size               = sizeof(uint32_t) * 3;
+        desc.size               = sizeof(uint32_t) * 6;
         desc.usage              = GPUBufferUsage::INDEX | GPUBufferUsage::MAP_WRITE;
         desc.mapped_at_creation = true;
         return device.create_buffer(desc);
@@ -165,21 +168,34 @@ void setup_buffers()
 
     auto vertices = vbuffer.get_mapped_range<Vertex>();
 
-    // positions
+    // positions (tri 1)
     vertices.at(0).position = {0.0f, 0.0f, 0.0f};
     vertices.at(1).position = {1.0f, 0.0f, 0.0f};
     vertices.at(2).position = {0.0f, 1.0f, 0.0f};
 
-    // colors
-    vertices.at(0).color = {1.0f, 0.0f, 0.0f};
-    vertices.at(1).color = {0.0f, 1.0f, 0.0f};
-    vertices.at(2).color = {0.0f, 0.0f, 1.0f};
+    // colors (tri 1)
+    vertices.at(0).color = {1.0f, 1.0f, 0.0f};
+    vertices.at(1).color = {1.0f, 1.0f, 0.0f};
+    vertices.at(2).color = {1.0f, 1.0f, 0.0f};
+
+    // positions (tri 2)
+    vertices.at(3).position = {0.0f - 0.25f, 0.0f - 0.25f, -1.0f};
+    vertices.at(4).position = {1.0f - 0.25f, 0.0f - 0.25f, -1.0f};
+    vertices.at(5).position = {0.0f - 0.25f, 1.0f - 0.25f, -1.0f};
+
+    // colors (tri 2)
+    vertices.at(3).color = {0.0f, 1.0f, 1.0f};
+    vertices.at(4).color = {0.0f, 1.0f, 1.0f};
+    vertices.at(5).color = {0.0f, 1.0f, 1.0f};
 
     // indices
     auto indices  = ibuffer.get_mapped_range<uint>();
     indices.at(0) = 0;
     indices.at(1) = 1;
     indices.at(2) = 2;
+    indices.at(3) = 3;
+    indices.at(4) = 4;
+    indices.at(5) = 5;
 
     // uniform
     auto& surface    = RHI::get_current_surface();
@@ -193,12 +209,35 @@ void setup_buffers()
     uniform.at(0) = projection * modelview;
 }
 
+void setup_depth_buffer()
+{
+    auto& device  = RHI::get_current_device();
+    auto& surface = RHI::get_current_surface();
+
+    dbuffer = execute([&]() {
+        auto extent          = surface.get_current_extent();
+        auto desc            = GPUTextureDescriptor{};
+        desc.format          = GPUTextureFormat::DEPTH16UNORM;
+        desc.size.width      = extent.width;
+        desc.size.height     = extent.height;
+        desc.size.depth      = 1;
+        desc.array_layers    = 1;
+        desc.mip_level_count = 1;
+        desc.usage           = GPUTextureUsage::RENDER_ATTACHMENT;
+        desc.label           = "depth_buffer";
+        return device.create_texture(desc);
+    });
+
+    dview = dbuffer.create_view();
+}
+
 void cleanup()
 {
     auto& device = RHI::get_current_device();
     device.wait();
 
     // NOTE: This is optional, because all resources will be automatically collected by device at destruction.
+    dbuffer.destroy();
     ibuffer.destroy();
     vbuffer.destroy();
     vshader.destroy();
@@ -245,13 +284,21 @@ void render()
     color_attachment.store_op    = GPUStoreOp::STORE;
     color_attachment.view        = texture.view;
 
+    auto depth_attachment              = GPURenderPassDepthStencilAttachment{};
+    depth_attachment.view              = dview;
+    depth_attachment.depth_clear_value = 1.0f;
+    depth_attachment.depth_load_op     = GPULoadOp::CLEAR;
+    depth_attachment.depth_store_op    = GPUStoreOp::STORE;
+    depth_attachment.depth_read_only   = false;
+
     auto render_pass                     = GPURenderPassDescriptor{};
     render_pass.color_attachments        = {color_attachment};
-    render_pass.depth_stencil_attachment = {};
+    render_pass.depth_stencil_attachment = depth_attachment;
 
     auto extent = surface.get_current_extent();
     command.wait(texture.available, GPUBarrierSync::PIXEL_SHADING);
     command.resource_barrier(state_transition(texture.texture, undefined_state(), color_attachment_state()));
+    command.resource_barrier(state_transition(dbuffer, undefined_state(), depth_stencil_attachment_state()));
     command.begin_render_pass(render_pass);
     command.set_viewport(0, 0, extent.width, extent.height);
     command.set_scissor_rect(0, 0, extent.width, extent.height);
@@ -259,7 +306,7 @@ void render()
     command.set_vertex_buffer(0, vbuffer);
     command.set_index_buffer(ibuffer, GPUIndexFormat::UINT32);
     command.set_bind_group(0, bind_group);
-    command.draw_indexed(3, 1, 0, 0, 0);
+    command.draw_indexed(6, 1, 0, 0, 0);
     command.end_render_pass();
     command.resource_barrier(state_transition(texture.texture, color_attachment_state(), present_src_state()));
     command.signal(texture.complete, GPUBarrierSync::RENDER_TARGET);
@@ -310,6 +357,7 @@ int main()
 
     win->bind<WindowEvent::START>(setup_pipeline);
     win->bind<WindowEvent::START>(setup_buffers);
+    win->bind<WindowEvent::START>(setup_depth_buffer);
     win->bind<WindowEvent::CLOSE>(cleanup);
     win->bind<WindowEvent::RENDER>(render);
     win->loop();
