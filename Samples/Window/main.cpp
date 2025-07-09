@@ -206,8 +206,7 @@ void update(const WindowInput& input)
     auto  extent  = surface.get_current_extent();
 
     // update transforms
-    auto proj = glm::perspective(
-        1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
+    auto proj = glm::perspective(1.05f, float(extent.width) / float(extent.height), 0.1f, 100.0f);
     auto view = glm::lookAt(camera.position, camera.center, camera.up);
 
     // update uniform
@@ -262,8 +261,7 @@ void render()
 
     auto extent = surface.get_current_extent();
     command.wait(texture.available, GPUBarrierSync::PIXEL_SHADING);
-    command.resource_barrier(state_transition(texture.texture, undefined_state(),
-        color_attachment_state()));
+    command.resource_barrier(state_transition(texture.texture, undefined_state(), color_attachment_state()));
     command.begin_render_pass(render_pass);
     command.set_viewport(0, 0, extent.width, extent.height);
     command.set_scissor_rect(0, 0, extent.width, extent.height);
@@ -271,8 +269,7 @@ void render()
     command.set_bind_group(0, bind_group);
     command.draw(3, 1, 0, 0);
     command.end_render_pass();
-    command.resource_barrier(state_transition(
-        texture.texture, color_attachment_state(), present_src_state()));
+    command.resource_barrier(state_transition(texture.texture, color_attachment_state(), present_src_state()));
     command.signal(texture.complete, GPUBarrierSync::RENDER_TARGET);
     command.submit();
 

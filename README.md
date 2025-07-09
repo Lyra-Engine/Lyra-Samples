@@ -20,11 +20,12 @@ cmake -S . -B Scratch -A x64    # configure CMake (explicitly with x64)
 cmake --build Scratch           # build with CMake
 ```
 
-## Collections
+## Basics
 
-1. Window (an example how to get user inputs)
-2. Triangle (an example of the most basic graphics pipeline)
-3. DepthTest (an example of the graphics pipeline with depth testing enabled)
+* [Window](Samples/Window/README.md)
+* [Triangle](Samples/Triangle/README.md)
+* [DepthTest](Samples/DepthTest/README.md)
+* [StencilTest](Samples/StencilTest/README.md)
 
 ## Author(s)
 
